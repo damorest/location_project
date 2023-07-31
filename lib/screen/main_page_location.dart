@@ -1,53 +1,106 @@
+import 'package:first/screen/settings_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import '../network/location_service.dart';
 
 class LocationPage extends StatefulWidget {
   const LocationPage({
     super.key,
-    required this.title
+    required this.title,
   });
 
   final String title;
 
   @override
-  State<LocationPage> createState() => _LocationPageState();
+  State<LocationPage> createState() => LocationPageState();
 }
 
-class _LocationPageState extends State<LocationPage> {
+class LocationPageState extends State<LocationPage> {
+  String? lat;
+  String? long;
+
+  @override
+  void initState() {
+    super.initState();
+    getLocation();
+  }
+
+  Future<void> _showInfoDialog() {
+    return showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Доступ до геолокації'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                const Text('Надайте доступ'),
+                InkWell(
+                    child: const Text(
+                      'до геолокації',
+                      style: TextStyle(
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                    onTap: () {}),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Ok'),
+              onPressed: () {
+                //Navigator.of(context).pop();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (BuildContext context) => const SettingsPage(),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-        centerTitle: true,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(widget.title),
+            const SizedBox(width: 10),
+            IconButton(
+                onPressed: () {
+                  _showInfoDialog();
+                },
+                icon: const Icon(Icons.settings))
+          ],
+        ),
+        //centerTitle: true,
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child:
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'ЦЕ МОЯ ШИРИНА',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                const SizedBox(height: 15),
-                Text(
-                  'ЦЕ МОЯ ДОВГОТА',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-              ],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Latitude:${lat ?? 'Loading ...'}',
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
+            const SizedBox(height: 15),
+            Text(
+              ' Longitude: ${long ?? 'Loading ...'}',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+          ],
+        ),
       ),
-      floatingActionButton: Row (
+      floatingActionButton: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           FloatingActionButton(
@@ -64,5 +117,17 @@ class _LocationPageState extends State<LocationPage> {
         ],
       ),
     );
+  }
+
+  void getLocation() async {
+    final service = LocationService();
+    final locationData = await service.getLocation();
+
+    if (locationData != null) {
+      setState(() {
+        lat = locationData.latitude!.toStringAsFixed(2);
+        long = locationData.longitude!.toStringAsFixed(2);
+      });
+    }
   }
 }
