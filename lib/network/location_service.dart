@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 import 'package:location/location.dart';
 
@@ -37,6 +39,20 @@ class LocationService {
   Future<LocationData?> getLocation() async{
     if(await _checkPermission()) {
       final locationData = _location.getLocation();
+      return locationData;
+    }
+    return null;
+  }
+
+  Future<StreamSubscription<LocationData>?> getStreamLocation() async{
+    if(await _checkPermission()) {
+      final locationData = _location.onLocationChanged.listen((event) {
+           final lat = event.latitude!.toStringAsFixed(2);
+            final long = event.longitude!.toStringAsFixed(2);
+
+            print('LAT $lat');
+            print('LONG $long');
+      });
       return locationData;
     }
     return null;
