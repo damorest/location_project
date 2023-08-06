@@ -1,60 +1,29 @@
-import 'dart:async';
-
-import 'package:flutter/services.dart';
-import 'package:location/location.dart';
+import 'package:geolocator/geolocator.dart';
 
 class LocationService {
-  late Location _location;
-  bool _serviceEnabled = false;
-  PermissionStatus? _permissionGranted;
 
-  LocationService() {
-    _location = Location();
-  }
+  Future<Position> determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
 
-  Future<bool> _checkPermission() async {
-    if (await _checkService()) {
-      _permissionGranted = await _location.hasPermission();
-      if (_permissionGranted == PermissionStatus.denied) {
-        _permissionGranted = await _location.requestPermission();
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return Future.error('Location services are disabled.');
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return Future.error('Location permissions are denied');
       }
     }
-    return _permissionGranted == PermissionStatus.granted;
-  }
 
-  Future<bool> _checkService() async{
-    try{
-      _serviceEnabled = await _location.serviceEnabled();
-      if (!_serviceEnabled) {
-        _serviceEnabled = await _location.requestService();
-      }
-      } on PlatformException catch(error) {
-        print('error code is ${error.code} and message ${error.message}');
-        _serviceEnabled = false;
-        await _checkService();
+    if (permission == LocationPermission.deniedForever) {
+      return Future.error(
+          'Location permissions are permanently denied, we cannot request permissions.');
     }
-       return _serviceEnabled;
-  }
-
-  Future<LocationData?> getLocation() async{
-    if(await _checkPermission()) {
-      final locationData = _location.getLocation();
-      return locationData;
-    }
-    return null;
-  }
-
-  Future<StreamSubscription<LocationData>?> getStreamLocation() async{
-    if(await _checkPermission()) {
-      final locationData = _location.onLocationChanged.listen((event) {
-           final lat = event.latitude!.toStringAsFixed(2);
-            final long = event.longitude!.toStringAsFixed(2);
-
-            print('LAT $lat');
-            print('LONG $long');
-      });
-      return locationData;
-    }
-    return null;
+    return await Geolocator.
+    getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
   }
 }

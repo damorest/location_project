@@ -1,8 +1,7 @@
 import 'dart:async';
-import 'package:first/screen/settings_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:location/location.dart';
+import 'package:geolocator/geolocator.dart';
 import '../network/location_service.dart';
 
 class LocationPage extends StatefulWidget {
@@ -22,54 +21,19 @@ class LocationPageState extends State<LocationPage> {
   String? long;
   final StreamController streamController = new StreamController();
 
-  @override
-  void initState() {
-    super.initState();
-    getLocation();
-  }
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   getLocation();
+  // }
 
-  Future<void> _showInfoDialog() {
-    return showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Доступ до геолокації'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                const Text('Надайте доступ'),
-                InkWell(
-                    child: const Text(
-                      'до геолокації',
-                      style: TextStyle(
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                    onTap: () {}),
-              ],
-            ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Ok'),
-              onPressed: () {
-                //Navigator.of(context).pop();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (BuildContext context) => const SettingsPage(),
-                  ),
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
+    Position? _currentLocation;
+    // late bool servicePermission = false;
+    // late LocationPermission permission;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme
@@ -83,7 +47,7 @@ class LocationPageState extends State<LocationPage> {
             const SizedBox(width: 10),
             IconButton(
                 onPressed: () {
-                  _showInfoDialog();
+                  Geolocator.openAppSettings();
                 },
                 icon: const Icon(Icons.settings))
           ],
@@ -91,17 +55,18 @@ class LocationPageState extends State<LocationPage> {
         //centerTitle: true,
       ),
       body: Center(
-        child: StreamBuilder(
-            stream: streamController.stream,
-            initialData: 5,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const CircularProgressIndicator.adaptive();
-              }
-              if (snapshot.hasError) {
-                return const Text('Error');
-              } else {
-                return Column(
+        // child: StreamBuilder(
+        //     stream: streamController.stream,
+        //     initialData: 5,
+        //     builder: (context, snapshot) {
+        //       if (snapshot.connectionState == ConnectionState.waiting) {
+        //         return const CircularProgressIndicator.adaptive();
+        //       }
+        //       if (snapshot.hasError) {
+        //         return const Text('Error');
+        //       } else {
+        //         return
+                  child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
@@ -120,49 +85,44 @@ class LocationPageState extends State<LocationPage> {
                           .headlineMedium,
                     ),
                   ],
-                );
-              }
-            }
-        ),
+                ),
+        //       }
+        //     }
+        // ),
       ),
       floatingActionButton: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          FloatingActionButton(
-            onPressed: () {
-             getStream();
+          ElevatedButton(
+            onPressed: () async {
+              _currentLocation = await getLocation();
+              print('${_currentLocation}');
+              setState(() {
+                lat = _currentLocation?.latitude.toString();
+                long = _currentLocation?.longitude.toString();
+              });
             },
-            tooltip: 'Start',
-            child: const Icon(Icons.not_started_outlined),
+            child: const Text("get location"),
           ),
           const SizedBox(width: 10),
-          FloatingActionButton(
+          ElevatedButton(
             onPressed: () {
+              print('STOP');
             },
-            tooltip: 'Finish',
-            child: const Icon(Icons.stop_circle),
+            child: const Text("stop location"),
           ), // This trailing comma m// This trailing comma m
         ],
       ),
     );
   }
 
-  void getLocation() async {
-    final service = LocationService();
-    final locationData = await service.getLocation();
-
-    if (locationData != null) {
-      setState(() {
-        lat = locationData.latitude!.toStringAsFixed(2);
-        long = locationData.longitude!.toStringAsFixed(2);
-      });
-    }
-  }
-
-  void getStream() async {
-    final service = LocationService();
-    final locationData = await service.getStreamLocation();
-    final stream = streamController.sink.add(locationData);
-    }
+  Future <Position> getLocation() async => LocationService().determinePosition();
+  
+  //
+  // void getStream() async {
+  //   final service = LocationService();
+  //   final locationData = await service.getStreamLocation();
+  //   final stream = streamController.sink.add(locationData);
+  //   }
 
   }
