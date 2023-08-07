@@ -19,20 +19,20 @@ class LocationPage extends StatefulWidget {
 class LocationPageState extends State<LocationPage> {
   String? lat;
   String? long;
-  final StreamController streamController = new StreamController();
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   getLocation();
-  // }
+  Stream<Position> streamController = Geolocator.getPositionStream();
+
+
+  @override
+  void dispose() {
+    streamController.listen((event) {}).cancel();
+    super.dispose();
+  }
 
 
   @override
   Widget build(BuildContext context) {
-    Position? _currentLocation;
-    // late bool servicePermission = false;
-    // late LocationPermission permission;
+    //Position? _currentLocation;
 
     return Scaffold(
       appBar: AppBar(
@@ -55,58 +55,60 @@ class LocationPageState extends State<LocationPage> {
         //centerTitle: true,
       ),
       body: Center(
-        // child: StreamBuilder(
-        //     stream: streamController.stream,
-        //     initialData: 5,
-        //     builder: (context, snapshot) {
-        //       if (snapshot.connectionState == ConnectionState.waiting) {
-        //         return const CircularProgressIndicator.adaptive();
-        //       }
-        //       if (snapshot.hasError) {
-        //         return const Text('Error');
-        //       } else {
-        //         return
-                  child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Latitude:${lat ?? 'Loading ...'}',
-                      style: Theme
-                          .of(context)
-                          .textTheme
-                          .headlineMedium,
-                    ),
-                    const SizedBox(height: 15),
-                    Text(
-                      ' Longitude: ${long ?? 'Loading ...'}',
-                      style: Theme
-                          .of(context)
-                          .textTheme
-                          .headlineMedium,
-                    ),
-                  ],
-                ),
-        //       }
-        //     }
-        // ),
+        child: StreamBuilder(
+            stream: streamController,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const CircularProgressIndicator.adaptive();
+              }
+              if (snapshot.hasError) {
+                return const Text('Error');
+              } else {
+                return
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Latitude:${lat ?? 'Loading ...'}',
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .headlineMedium,
+                      ),
+                      const SizedBox(height: 15),
+                      Text(
+                        ' Longitude: ${long ?? 'Loading ...'}',
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .headlineMedium,
+                      ),
+                    ],
+                  );
+              }
+            }
+        ),
       ),
       floatingActionButton: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           ElevatedButton(
             onPressed: () async {
-              _currentLocation = await getLocation();
-              print('${_currentLocation}');
-              setState(() {
-                lat = _currentLocation?.latitude.toString();
-                long = _currentLocation?.longitude.toString();
-              });
+              print('START');
+              streamController.listen(
+                      (Position? position) {
+                    lat = position?.latitude.toString();
+                    print('LAT : $lat');
+                    long = position?.longitude.toString();
+                    print('LONG : $long');
+                  });
             },
             child: const Text("get location"),
           ),
           const SizedBox(width: 10),
           ElevatedButton(
             onPressed: () {
+              dispose();
               print('STOP');
             },
             child: const Text("stop location"),
@@ -116,13 +118,9 @@ class LocationPageState extends State<LocationPage> {
     );
   }
 
-  Future <Position> getLocation() async => LocationService().determinePosition();
-  
-  //
-  // void getStream() async {
-  //   final service = LocationService();
-  //   final locationData = await service.getStreamLocation();
-  //   final stream = streamController.sink.add(locationData);
-  //   }
+  Future <Position> getLocation() async =>
+      LocationService().determinePosition();
 
-  }
+  Future<Future<StreamSubscription>?> getStream() async =>
+      LocationService().streamPosition();
+}

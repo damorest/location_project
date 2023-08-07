@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 
 class LocationService {
@@ -26,4 +27,17 @@ class LocationService {
     return await Geolocator.
     getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
   }
+Future<StreamSubscription>? streamPosition() {
+  const LocationSettings locationSettings = LocationSettings(
+    accuracy: LocationAccuracy.best,
+    distanceFilter: 1,
+  );
+  StreamSubscription<Position> positionStream =
+  Geolocator.getPositionStream(locationSettings: locationSettings).listen(
+          (Position? position) {
+        print(position == null ? 'Unknown' : '${position.latitude
+            .toString()}, ${position.longitude.toString()}');
+      });
+}
+
 }
