@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:first/blocs/geolocation_bloc.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart';
 import '../network/location_service.dart';
 
@@ -55,39 +57,42 @@ class LocationPageState extends State<LocationPage> {
         //centerTitle: true,
       ),
       body: Center(
-        child: StreamBuilder(
-            stream: streamController,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const CircularProgressIndicator.adaptive();
-              }
-              if (snapshot.hasError) {
-                return const Text('Error');
-              } else {
-                return
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Latitude:${lat ?? 'Loading ...'}',
-                        style: Theme
-                            .of(context)
-                            .textTheme
-                            .headlineMedium,
-                      ),
-                      const SizedBox(height: 15),
-                      Text(
-                        ' Longitude: ${long ?? 'Loading ...'}',
-                        style: Theme
-                            .of(context)
-                            .textTheme
-                            .headlineMedium,
-                      ),
-                    ],
-                  );
-              }
+        child: BlocBuilder<GeolocationBloc, GeolocationState>(
+          builder: (context, state) {
+            if(state is GeolocationLoading) {
+              return const Center(
+                  child: CircularProgressIndicator.adaptive()
+              );
             }
+            else if (state is GeolocationLoaded) {
+              return
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Latitude:${state.position.latitude ?? 'Loading ...'}',
+                      style: Theme
+                          .of(context)
+                          .textTheme
+                          .headlineMedium,
+                    ),
+                    const SizedBox(height: 15),
+                    Text(
+                      ' Longitude: ${state.position.longitude ?? 'Loading ...'}',
+                      style: Theme
+                          .of(context)
+                          .textTheme
+                          .headlineMedium,
+                    ),
+                  ],
+                );
+            }
+            else {
+              return Text('Something went wrong');
+            }
+          }
         ),
+
       ),
       floatingActionButton: Row(
         mainAxisAlignment: MainAxisAlignment.end,
